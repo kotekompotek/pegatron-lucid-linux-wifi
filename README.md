@@ -55,7 +55,7 @@ The 6250 is a Wi-Fi + WiMAX combo card. While GPIO27 is high, the whole card is 
 
 ## Kernel patches
 
-[`patches/`](patches/) adds a `pega-wimax` rfkill switch to `asus-laptop`, which unblocks id 6 at boot. It also fixes a leak where the wimax rfkill was never freed. The series was submitted to `platform-driver-x86@vger.kernel.org`. Once it is merged, the workaround above is no longer needed.
+[`patches/`](patches/) adds a `pega-wimax` rfkill switch to `asus-laptop`, which unblocks id 6 at boot. It also fixes a leak where the wimax rfkill was never freed. The series was submitted to `platform-driver-x86@vger.kernel.org` on 2026-10-10 ([thread on lore](https://lore.kernel.org/platform-driver-x86/20261010193837.1120-1-kotekompotek@gmail.com/T/#t), [status in patchwork](https://patchwork.kernel.org/project/platform-driver-x86/list/?submitter=&q=asus-laptop+Pegatron)). Once it is merged, the workaround above is no longer needed.
 
 ## Warnings
 
@@ -69,4 +69,5 @@ Pegatron Lucid (Atom N4xx/N5xx, ICH8M), Debian 13, kernel 6.12.111, Intel 6250 (
 ## Links
 
 - Q&A on Unix & Linux StackExchange: https://unix.stackexchange.com/a/807627
+- Kernel patch thread: https://lore.kernel.org/platform-driver-x86/20261010193837.1120-1-kotekompotek@gmail.com/T/#t
 - Original Lucid support in `asus-laptop` (2011): https://lkml.rescloud.iu.edu/hypermail/linux/kernel/1110.1/02485.html
