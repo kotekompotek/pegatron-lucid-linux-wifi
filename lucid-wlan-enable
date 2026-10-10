@@ -1,0 +1,8 @@
+
+#!/bin/sh
+# Pegatron Lucid: BIOS leaves GPIO27 (WMHD) high, which asserts W_DISABLE on the
+# Intel 6250 combo card -> iwlwifi reports hard RF-kill. ACPI ATKD.ENPR(6) clears it.
+# Revert: echo '\_SB.ATKD.DAPR 6' > /proc/acpi/call
+modprobe acpi_call || exit 1
+echo '\_SB.ATKD.ENPR 6' > /proc/acpi/call
+echo "ENPR(6): $(tr -d '\000' < /proc/acpi/call)"

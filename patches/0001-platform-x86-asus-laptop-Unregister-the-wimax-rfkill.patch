@@ -1,0 +1,36 @@
+From 5bb7ca721dbb997837eb39dc069bbd064f7b7ffa Mon Sep 17 00:00:00 2001
+From: "Pavel Kossenko (kotekompotek)" <kotekompotek@gmail.com>
+Date: Sun, 11 Oct 2026 00:21:55 +0500
+Subject: [PATCH 1/2] platform/x86: asus-laptop: Unregister the wimax rfkill on
+ exit
+
+asus_rfkill_init() registers an "asus-wimax" rfkill switch on machines
+that implement WM_RSTS, but asus_rfkill_exit() never unregisters it.
+The rfkill device is leaked when the driver is removed, and also when
+probe fails after asus_rfkill_init() has succeeded.
+
+Add the missing asus_rfkill_terminate() call. It is a no-op when the
+switch was never registered.
+
+Fixes: 3c8671ffd334 ("asus-laptop: add rfkill interfaces for wlan and wwan")
+Assisted-by: Claude Opus 5.5
+Signed-off-by: Pavel Kossenko (kotekompotek) <kotekompotek@gmail.com>
+---
+ drivers/platform/x86/asus-laptop.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index de607ed..8e69f02 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -1332,6 +1332,7 @@ static void asus_rfkill_terminate(struct asus_rfkill *rfk)
+ 
+ static void asus_rfkill_exit(struct asus_laptop *asus)
+ {
++	asus_rfkill_terminate(&asus->wimax);
+ 	asus_rfkill_terminate(&asus->wwan);
+ 	asus_rfkill_terminate(&asus->bluetooth);
+ 	asus_rfkill_terminate(&asus->wlan);
+-- 
+2.47.0.windows.2
+

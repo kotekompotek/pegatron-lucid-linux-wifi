@@ -1,0 +1,68 @@
+From fdda28339f4ef0f017ce7a2438c66ae9454dbfe5 Mon Sep 17 00:00:00 2001
+From: "Pavel Kossenko (kotekompotek)" <kotekompotek@gmail.com>
+Date: Sun, 11 Oct 2026 00:21:56 +0500
+Subject: [PATCH 2/2] platform/x86: asus-laptop: Add WiMAX rfkill switch for
+ Pegatron Lucid
+
+On the Pegatron Lucid the ATK methods ENPR and DAPR enable and disable
+a radio selected by an id. The driver exposes ids 0-2 (WLAN, Bluetooth,
+WWAN) as the pega-wlan, pega-bt and pega-wwan rfkill switches, but the
+DSDT also implements id 6, which drives GPIO27 and the EC bit WMHD:
+
+  If ((Arg0 == 0x06)) { GP27 = Zero; WMHD = Zero; ALED (One) }
+
+The firmware leaves GPIO27 high at boot. On units fitted with an Intel
+Centrino Advanced-N + WiMAX 6250 combo card (8086:0087, subsystem
+8086:1301) this keeps the whole card in hardware RF-kill, so Wi-Fi is
+unusable even though pega-wlan is unblocked:
+
+  iwlwifi 0000:02:00.0: reporting RF_KILL (radio disabled)
+
+The same card works under Windows, presumably because the vendor
+utility calls ENPR(6).
+
+Register a "pega-wimax" rfkill switch for id 6. The rfkill core applies
+the default unblocked state on registration, which calls ENPR(6) and
+releases the card:
+
+  iwlwifi 0000:02:00.0: RF_KILL bit toggled to enable radio.
+
+Assisted-by: Claude Opus 5.5
+Signed-off-by: Pavel Kossenko (kotekompotek) <kotekompotek@gmail.com>
+---
+ drivers/platform/x86/asus-laptop.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index 8e69f02..ef4c2cc 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -192,6 +192,7 @@ MODULE_PARM_DESC(als_status, "Set the ALS status on boot "
+ #define PEGA_WWAN	0x02
+ #define PEGA_ALS	0x04
+ #define PEGA_ALS_POWER	0x05
++#define PEGA_WIMAX	0x06
+ 
+ #define METHOD_PEGA_READ	"RDLN"
+ #define PEGA_READ_ALS_H	0x02
+@@ -1454,6 +1455,17 @@ static int pega_rfkill_init(struct asus_laptop *asus)
+ 
+ 	ret = pega_rfkill_setup(asus, &asus->wwan, "pega-wwan",
+ 				PEGA_WWAN, RFKILL_TYPE_WWAN);
++	if (ret)
++		goto exit;
++
++	/*
++	 * The firmware leaves this line asserted at boot. On units fitted
++	 * with an Intel Centrino Advanced-N + WiMAX 6250 combo card it keeps
++	 * the whole card in hardware RF-kill, Wi-Fi included. Registering
++	 * the switch unblocks it by default, which calls ENPR(6).
++	 */
++	ret = pega_rfkill_setup(asus, &asus->wimax, "pega-wimax",
++				PEGA_WIMAX, RFKILL_TYPE_WIMAX);
+ 
+ exit:
+ 	if (ret)
+-- 
+2.47.0.windows.2
+

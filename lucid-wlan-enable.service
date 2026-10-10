@@ -1,0 +1,13 @@
+[Unit]
+Description=Pegatron Lucid: release Intel 6250 W_DISABLE (ACPI ENPR 6)
+After=systemd-modules-load.service
+Before=network-pre.target NetworkManager.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/lucid-wlan-enable
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
