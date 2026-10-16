@@ -27,7 +27,7 @@ sudo modprobe acpi_call
 echo '\_SB.ATKD.ENPR 6' | sudo tee /proc/acpi/call
 ```
 
-The kernel logs `iwlwifi ...: RF_KILL bit toggled to enable radio.` and Wi-Fi works right away.
+The kernel logs `iwlwifi ...: RF_KILL bit toggled to enable radio.` and Wi-Fi works right away. The setting is stored in CMOS by the firmware, so it normally survives reboots (see Cause).
 
 ## Permanent fix
 
@@ -38,20 +38,24 @@ sudo ./check.sh      # read-only: affected machines show GP27(WMHD)=1
 sudo ./install.sh    # installs acpi-call-dkms + a systemd unit
 ```
 
+The unit re-applies `ENPR(6)` on every boot. That is a safety net: it keeps Wi-Fi working if the CMOS setting is reset or switched off again.
+
 To undo: `sudo systemctl disable --now lucid-wlan-enable` and `echo '\_SB.ATKD.DAPR 6' | sudo tee /proc/acpi/call`.
 
 ## Cause
 
 The DSDT methods `\_SB.ATKD.ENPR` (enable) and `DAPR` (disable) switch radios by id:
 
-| Id | Radio | GPIO | EC bit | Handled by `asus-laptop` | State at boot |
+| Id | Radio | GPIO | Saved state bit (CMOS 0x7C) | Handled by `asus-laptop` | State on the affected unit |
 |----|-------|------|--------|--------------------------|---------------|
 | 0 | WLAN | GP18 | WLRF | yes (`pega-wlan`) | enabled |
 | 1 | Bluetooth | GP17 | BTRF | yes (`pega-bt`) | enabled |
 | 2 | WWAN | GP20 | WWAN | yes (`pega-wwan`) | enabled |
 | 6 | WiMAX | GP27 | WMHD | **no** | **disabled** |
 
-The 6250 is a Wi-Fi + WiMAX combo card. While GPIO27 is high, the whole card is held in hardware RF-kill, Wi-Fi included. The Linux `asus-laptop` driver never calls `ENPR(6)`. The Windows vendor utility apparently does.
+The 6250 is a Wi-Fi + WiMAX combo card. While GPIO27 is high, the whole card is held in hardware RF-kill, Wi-Fi included.
+
+`ENPR`/`DAPR` also save each radio's state in extended CMOS (I/O ports 0x72/0x73, index 0x7C; `WMHD` is bit 4). At boot the firmware restores GPIO27 from that bit. Verified on the device: with `WMHD`=1 the BIOS raises GPIO27 and the card is hard-blocked; after `ENPR(6)` writes `WMHD`=0, the next boot leaves GPIO27 low. On affected units the saved state is "disabled", and the Linux `asus-laptop` driver never calls `ENPR(6)`, so nothing under Linux could switch it back on.
 
 ## Kernel patches
 
