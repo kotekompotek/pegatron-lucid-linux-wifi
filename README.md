@@ -55,7 +55,9 @@ The DSDT methods `\_SB.ATKD.ENPR` (enable) and `DAPR` (disable) switch radios by
 
 The 6250 is a Wi-Fi + WiMAX combo card. While GPIO27 is high, the whole card is held in hardware RF-kill, Wi-Fi included.
 
-`ENPR`/`DAPR` also save each radio's state in extended CMOS (I/O ports 0x72/0x73, index 0x7C; `WMHD` is bit 4). At boot the firmware restores GPIO27 from that bit. Verified on the device: with `WMHD`=1 the BIOS raises GPIO27 and the card is hard-blocked; after `ENPR(6)` writes `WMHD`=0, the next boot leaves GPIO27 low. On affected units the saved state is "disabled", and the Linux `asus-laptop` driver never calls `ENPR(6)`, so nothing under Linux could switch it back on.
+`ENPR`/`DAPR` also save each radio's state in extended CMOS (I/O ports 0x72/0x73, index 0x7C; `WMHD` is bit 4). At boot the firmware sets GPIO27 from that bit. Verified on the device with warm reboots, setting the bit and the line out of sync on purpose: `WMHD`=1 with GPIO27 low came up with GPIO27 high (card hard-blocked), and `WMHD`=0 with GPIO27 high came up with GPIO27 low. A cold boot was not tested. On the affected unit GPIO27 came up high, and the Linux `asus-laptop` driver never calls `ENPR(6)`, so nothing under Linux could switch it back on.
+
+On this unit only GPIO27 gates the card. Blocking `pega-wlan`, `pega-bt` or `pega-wwan` (GPIO18, GPIO17, GPIO20) does not affect it.
 
 ## Kernel patches
 
